@@ -1,0 +1,15 @@
+*.csv
+*.pdf
+*.xml
+*.jpg
+*.sav
+*.bbl
+*.log
+*.toc
+*.xls
+*.xlsx
+*.txt
+*.png
+*.json
+*.pyc
+__pycache__

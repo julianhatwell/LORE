@@ -1,5 +1,5 @@
-from gpdatagenerator import *
-from distance_functions import *
+from . import gpdatagenerator
+from . import distance_functions
 
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import CondensedNearestNeighbour
@@ -183,4 +183,3 @@ def random_instance_selection(dfZ, x, blackbox, dataset):
     Z, _, _ = cnn.fit_sample(Z, y)
     dfZ = build_df2explain(blackbox, Z, dataset)
     return dfZ, Z
-

@@ -1,4 +1,4 @@
-from util import *
+from . import util
 
 
 def prepare_german_dataset(filename, path_data):

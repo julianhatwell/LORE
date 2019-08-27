@@ -1,12 +1,12 @@
-import pyyadt
+from . import pyyadt
 import random
 
-from neighbor_generator import *
-from gpdatagenerator import calculate_feature_values
-
+from . import neighbor_generator
+from . import gpdatagenerator
+# from gpdatagenerator import calculate_feature_values
 
 def explain(idx_record2explain, X2E, dataset, blackbox,
-            ng_function=genetic_neighborhood, #generate_random_data, #genetic_neighborhood, random_neighborhood
+            ng_function=neighbor_generator.genetic_neighborhood, #generate_random_data, #genetic_neighborhood, random_neighborhood
             discrete_use_probabilities=False,
             continuous_function_estimation=False,
             returns_infos=False, path='./', sep=';', log=False):
@@ -21,7 +21,7 @@ def explain(idx_record2explain, X2E, dataset, blackbox,
     possible_outcomes = dataset['possible_outcomes']
 
     # Dataset Preprocessing
-    dataset['feature_values'] = calculate_feature_values(X2E, columns, class_name, discrete, continuous, 1000,
+    dataset['feature_values'] = gpdatagenerator.calculate_feature_values(X2E, columns, class_name, discrete, continuous, 1000,
                                                          discrete_use_probabilities, continuous_function_estimation)
 
     dfZ, x = dataframe2explain(X2E, dataset, idx_record2explain, blackbox)
@@ -119,4 +119,3 @@ def get_covered(rule, X, dataset):
         if is_satisfied(x, rule, dataset['discrete'], dataset['features_type']):
             covered_indexes.append(i)
     return covered_indexes
-
