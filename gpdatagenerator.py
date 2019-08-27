@@ -2,7 +2,7 @@ import math
 import warnings
 import scipy.stats as st
 
-from util import *
+from . import util
 from deap import base, creator, tools, algorithms
 
 
@@ -37,15 +37,15 @@ def fitness_sso(x0, bb, alpha1, alpha2, eta, discrete, continuous, class_name, i
     # similar_same_outcome
     x0d = {idx_features[i]: val for i, val in enumerate(x0)}
     x1d = {idx_features[i]: val for i, val in enumerate(x1)}
-    
+
     # zero if is too similar
     sim_ratio = 1.0 - distance_function(x0d, x1d, discrete, continuous, class_name)
     record_similarity = 0.0 if sim_ratio >= eta else sim_ratio
-    
+
     y0 = bb.predict(np.asarray(x0).reshape(1, -1))[0]
     y1 = bb.predict(np.asarray(x1).reshape(1, -1))[0]
     target_similarity = 1.0 if y0 == y1 else 0.0
-    
+
     evaluation = alpha1 * record_similarity + alpha2 * target_similarity
     return evaluation,
 
@@ -75,11 +75,11 @@ def fitness_dso(x0, bb, alpha1, alpha2, eta, discrete, continuous, class_name, i
     # zero if is too dissimilar
     sim_ratio = 1.0 - distance_function(x0d, x1d, discrete, continuous, class_name)
     record_similarity = 0.0 if sim_ratio <= eta else 1.0 - sim_ratio
-    
+
     y0 = bb.predict(np.asarray(x0).reshape(1, -1))[0]
     y1 = bb.predict(np.asarray(x1).reshape(1, -1))[0]
     target_similarity = 1.0 if y0 == y1 else 0.0
-    
+
     evaluation = alpha1 * record_similarity + alpha2 * target_similarity
     return evaluation,
 
@@ -88,15 +88,15 @@ def fitness_ddo(x0, bb, alpha1, alpha2, eta, discrete, continuous, class_name, i
     # dissimilar_different_outcome
     x0d = {idx_features[i]: val for i, val in enumerate(x0)}
     x1d = {idx_features[i]: val for i, val in enumerate(x1)}
-    
+
     # zero if is too dissimilar
     sim_ratio = 1.0 - distance_function(x0d, x1d, discrete, continuous, class_name)
     record_similarity = 0.0 if sim_ratio <= eta else 1.0 - sim_ratio
-    
+
     y0 = bb.predict(np.asarray(x0).reshape(1, -1))[0]
     y1 = bb.predict(np.asarray(x1).reshape(1, -1))[0]
     target_similarity = 1.0 if y0 != y1 else 0.0
-    
+
     evaluation = alpha1 * record_similarity + alpha2 * target_similarity
     return evaluation,
 
@@ -107,37 +107,37 @@ def setup_toolbox(record, feature_values, bb, init, init_params, evaluate, discr
 
     creator.create("fitness", base.Fitness, weights=(1.0,))
     creator.create("individual", list, fitness=creator.fitness)
-    
+
     toolbox = base.Toolbox()
     toolbox.register("feature_values", init, init_params)
     toolbox.register("individual", tools.initIterate, creator.individual, toolbox.feature_values)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual, n=population_size)
-    
+
     toolbox.register("clone", cPickle_clone)
     toolbox.register("evaluate", evaluate, record, bb, alpha1, alpha2, eta, discrete, continuous,
                      class_name, idx_features, distance_function)
     toolbox.register("mate", tools.cxTwoPoint)
     toolbox.register("mutate", mutate, feature_values, mutpb, toolbox)
     toolbox.register("select", tools.selTournament, tournsize=tournsize)
-    
+
     return toolbox
 
 
 def fit(toolbox, population_size=1000, halloffame_ratio=0.1, cxpb=0.5, mutpb=0.2, ngen=10, verbose=False):
-    
+
     halloffame_size = int(np.round(population_size * halloffame_ratio))
-    
+
     population = toolbox.population(n=population_size)
     halloffame = tools.HallOfFame(halloffame_size)
-    
+
     stats = tools.Statistics(lambda ind: ind.fitness.values)
     stats.register("avg", np.mean)
     stats.register("min", np.min)
     stats.register("max", np.max)
-    
+
     population, logbook = algorithms.eaSimple(population, toolbox, cxpb=cxpb, mutpb=mutpb, ngen=ngen,
                                               stats=stats, halloffame=halloffame, verbose=verbose)
-    
+
     return population, halloffame, logbook
 
 
@@ -148,53 +148,53 @@ def get_oversample(population, halloffame):
 
     index = np.max(np.argwhere(fitness_diff == np.amax(fitness_diff)).flatten().tolist())
     fitness_value_thr = fitness_values[index]
-    
+
     oversample = list()
-    
+
     for p in population:
         if p.fitness.wvalues[0] > fitness_value_thr:
             oversample.append(list(p))
-            
+
     for h in halloffame:
         if h.fitness.wvalues[0] > fitness_value_thr:
             oversample.append(list(h))
-            
+
     return oversample
 
 
 def generate_data(x, feature_values, bb, discrete, continuous, class_name, idx_features, distance_function,
                   neigtype='all', population_size=1000, halloffame_ratio=0.1, alpha1=0.5, alpha2=0.5, eta1=1.0,
                   eta2=0.0, tournsize=3, cxpb=0.5, mutpb=0.2, ngen=10, return_logbook=False):
-    
+
     if neigtype == 'all':
         neigtype = {'ss': 0.25, 'sd': 0.25, 'ds': 0.25, 'dd': 0.25}
-    
+
     size_sso = int(np.round(population_size * neigtype.get('ss', 0.0)))
     size_sdo = int(np.round(population_size * neigtype.get('sd', 0.0)))
     size_dso = int(np.round(population_size * neigtype.get('ds', 0.0)))
     size_ddo = int(np.round(population_size * neigtype.get('dd', 0.0)))
-    
+
     Xgp = list()
-    
+
     if size_sso > 0.0:
         toolbox_sso = setup_toolbox(x, feature_values, bb, init=record_init, init_params=x, evaluate=fitness_sso,
                                     discrete=discrete, continuous=continuous, class_name=class_name,
                                     idx_features=idx_features, distance_function=distance_function,
                                     population_size=size_sso, alpha1=alpha1, alpha2=alpha2, eta=eta1, mutpb=mutpb,
                                     tournsize=tournsize)
-        population, halloffame, logbook = fit(toolbox_sso, population_size=size_sso, halloffame_ratio=halloffame_ratio, 
+        population, halloffame, logbook = fit(toolbox_sso, population_size=size_sso, halloffame_ratio=halloffame_ratio,
                                               cxpb=cxpb, mutpb=mutpb, ngen=ngen, verbose=False)
 
         Xsso = get_oversample(population, halloffame)
         Xgp.append(Xsso)
-    
+
     if size_sdo > 0.0:
         toolbox_sdo = setup_toolbox(x, feature_values, bb, init=record_init, init_params=x, evaluate=fitness_sdo,
                                     discrete=discrete, continuous=continuous, class_name=class_name,
                                     idx_features=idx_features, distance_function=distance_function,
                                     population_size=size_sdo, alpha1=alpha1, alpha2=alpha2, eta=eta1, mutpb=mutpb,
                                     tournsize=tournsize)
-        population, halloffame, logbook = fit(toolbox_sdo, population_size=size_sdo, halloffame_ratio=halloffame_ratio, 
+        population, halloffame, logbook = fit(toolbox_sdo, population_size=size_sdo, halloffame_ratio=halloffame_ratio,
                                               cxpb=cxpb, mutpb=mutpb, ngen=ngen, verbose=False)
 
         Xsdo = get_oversample(population, halloffame)
@@ -206,7 +206,7 @@ def generate_data(x, feature_values, bb, discrete, continuous, class_name, idx_f
                                     idx_features=idx_features, distance_function=distance_function,
                                     population_size=size_dso, alpha1=alpha1, alpha2=alpha2, eta=eta2, mutpb=mutpb,
                                     tournsize=tournsize)
-        population, halloffame, logbook = fit(toolbox_dso, population_size=size_dso, halloffame_ratio=halloffame_ratio, 
+        population, halloffame, logbook = fit(toolbox_dso, population_size=size_dso, halloffame_ratio=halloffame_ratio,
                                               cxpb=cxpb, mutpb=mutpb, ngen=ngen, verbose=False)
 
         Xdso = get_oversample(population, halloffame)
@@ -218,7 +218,7 @@ def generate_data(x, feature_values, bb, discrete, continuous, class_name, idx_f
                                     idx_features=idx_features, distance_function=distance_function,
                                     population_size=size_ddo, alpha1=alpha1, alpha2=alpha2, eta=eta2, mutpb=mutpb,
                                     tournsize=tournsize)
-        population, halloffame, logbook = fit(toolbox_ddo, population_size=size_ddo, halloffame_ratio=halloffame_ratio, 
+        population, halloffame, logbook = fit(toolbox_ddo, population_size=size_ddo, halloffame_ratio=halloffame_ratio,
                                               cxpb=cxpb, mutpb=mutpb, ngen=ngen, verbose=False)
 
         Xddo = get_oversample(population, halloffame)
@@ -235,11 +235,11 @@ def generate_data(x, feature_values, bb, discrete, continuous, class_name, idx_f
 def calculate_feature_values(X, columns, class_name, discrete, continuous, size=1000,
                              discrete_use_probabilities=False,
                              continuous_function_estimation=False):
-    
+
     columns1 = list(columns)
     columns1.remove(class_name)
     feature_values = dict()
-    
+
     for i, col in enumerate(columns1):
         values = X[:, i]
         if col in discrete:
@@ -259,9 +259,9 @@ def calculate_feature_values(X, columns, class_name, discrete, continuous, size=
                 sigma = np.std(values)
                 new_values = np.random.normal(mu, sigma, size)
             new_values = np.concatenate((values, new_values), axis=0)
-        
+
         feature_values[i] = new_values
-        
+
     return feature_values
 
 
@@ -278,7 +278,7 @@ def get_distr_values(x, size=1000):
     end = dist.ppf(0.99, *arg, loc=loc, scale=scale) if arg else dist.ppf(0.99, loc=loc, scale=scale)
 
     distr_values = np.linspace(start, end, size)
-    
+
     return distr_values
 
 
@@ -364,4 +364,3 @@ def best_fit_distribution(data, bins=200, ax=None):
             pass
 
     return best_distribution.name, best_params
-
