@@ -1,3 +1,5 @@
+import numpy as np
+import pandas as pd
 from . import util
 
 
@@ -11,17 +13,17 @@ def prepare_german_dataset(filename, path_data):
     class_name = 'default'
     possible_outcomes = list(df[class_name].unique())
 
-    type_features, features_type = recognize_features_type(df, class_name)
+    type_features, features_type = util.recognize_features_type(df, class_name)
 
     discrete = ['installment_as_income_perc', 'present_res_since', 'credits_this_bank', 'people_under_maintenance']
-    discrete, continuous = set_discrete_continuous(columns, type_features, class_name, discrete, continuous=None)
+    discrete, continuous = util.set_discrete_continuous(columns, type_features, class_name, discrete, continuous=None)
 
     columns_tmp = list(columns)
     columns_tmp.remove(class_name)
     idx_features = {i: col for i, col in enumerate(columns_tmp)}
 
     # Dataset Preparation for Scikit Alorithms
-    df_le, label_encoder = label_encode(df, discrete)
+    df_le, label_encoder = util.label_encode(df, discrete)
     X = df_le.loc[:, df_le.columns != class_name].values
     y = df_le[class_name].values
 
@@ -65,16 +67,16 @@ def prepare_adult_dataset(filename, path_data):
     class_name = 'class'
     possible_outcomes = list(df[class_name].unique())
 
-    type_features, features_type = recognize_features_type(df, class_name)
+    type_features, features_type = util.recognize_features_type(df, class_name)
 
-    discrete, continuous = set_discrete_continuous(columns, type_features, class_name, discrete=None, continuous=None)
+    discrete, continuous = util.set_discrete_continuous(columns, type_features, class_name, discrete=None, continuous=None)
 
     columns_tmp = list(columns)
     columns_tmp.remove(class_name)
     idx_features = {i: col for i, col in enumerate(columns_tmp)}
 
     # Dataset Preparation for Scikit Alorithms
-    df_le, label_encoder = label_encode(df, discrete)
+    df_le, label_encoder = util.label_encode(df, discrete)
     X = df_le.loc[:, df_le.columns != class_name].values
     y = df_le[class_name].values
 
@@ -138,10 +140,10 @@ def prepare_compass_dataset(filename, path_data):
     class_name = 'class'
     possible_outcomes = list(df[class_name].unique())
 
-    type_features, features_type = recognize_features_type(df, class_name)
+    type_features, features_type = util.recognize_features_type(df, class_name)
 
     discrete = ['is_recid', 'is_violent_recid', 'two_year_recid']
-    discrete, continuous = set_discrete_continuous(columns, type_features, class_name, discrete=discrete,
+    discrete, continuous = util.set_discrete_continuous(columns, type_features, class_name, discrete=discrete,
                                                    continuous=None)
 
     columns_tmp = list(columns)
@@ -149,7 +151,7 @@ def prepare_compass_dataset(filename, path_data):
     idx_features = {i: col for i, col in enumerate(columns_tmp)}
 
     # Dataset Preparation for Scikit Alorithms
-    df_le, label_encoder = label_encode(df, discrete)
+    df_le, label_encoder = util.label_encode(df, discrete)
     X = df_le.loc[:, df_le.columns != class_name].values
     y = df_le[class_name].values
 

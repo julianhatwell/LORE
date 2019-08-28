@@ -1,6 +1,8 @@
-from . import pyyadt
 import random
+import numpy as np
 
+from . import pyyadt
+from . import util
 from . import neighbor_generator
 from . import gpdatagenerator
 # from gpdatagenerator import calculate_feature_values
@@ -24,7 +26,7 @@ def explain(idx_record2explain, X2E, dataset, blackbox,
     dataset['feature_values'] = gpdatagenerator.calculate_feature_values(X2E, columns, class_name, discrete, continuous, 1000,
                                                          discrete_use_probabilities, continuous_function_estimation)
 
-    dfZ, x = dataframe2explain(X2E, dataset, idx_record2explain, blackbox)
+    dfZ, x = util.dataframe2explain(X2E, dataset, idx_record2explain, blackbox)
 
     # Generate Neighborhood
     dfZ, Z = ng_function(dfZ, x, blackbox, dataset)
@@ -36,7 +38,7 @@ def explain(idx_record2explain, X2E, dataset, blackbox,
     # Apply Black Box and Decision Tree on instance to explain
     bb_outcome = blackbox.predict(x.reshape(1, -1))[0]
 
-    dfx = build_df2explain(blackbox, x.reshape(1, -1), dataset).to_dict('records')[0]
+    dfx = util.build_df2explain(blackbox, x.reshape(1, -1), dataset).to_dict('records')[0]
     cc_outcome, rule, tree_path = pyyadt.predict_rule(dt, dfx, class_name, features_type, discrete, continuous)
 
     # Apply Black Box and Decision Tree on neighborhood
@@ -50,13 +52,13 @@ def explain(idx_record2explain, X2E, dataset, blackbox,
 
     # Update labels if necessary
     if class_name in label_encoder:
-        cc_outcome = label_encoder[class_name].transform(np.array([cc_outcome]))[0]
+        cc_outcome = util.label_encoder[class_name].transform(np.array([cc_outcome]))[0]
 
     if class_name in label_encoder:
-        y_pred_cc = label_encoder[class_name].transform(y_pred_cc)
+        y_pred_cc = util.label_encoder[class_name].transform(y_pred_cc)
 
     # Extract Coutnerfactuals
-    diff_outcome = get_diff_outcome(bb_outcome, possible_outcomes)
+    diff_outcome = util.get_diff_outcome(bb_outcome, possible_outcomes)
     counterfactuals = pyyadt.get_counterfactuals(dt, tree_path, rule, diff_outcome,
                                                  class_name, continuous, features_type)
 

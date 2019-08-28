@@ -1,6 +1,8 @@
 import math
 import warnings
 import scipy.stats as st
+import numpy as np
+import pickle as cPickle
 
 from . import util
 from deap import base, creator, tools, algorithms

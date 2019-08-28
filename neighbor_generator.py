@@ -1,9 +1,11 @@
-from . import gpdatagenerator
-from . import distance_functions
+from . import util
+from . import gpdatagenerator as gpdg
+from . import distance_functions as distfun
 
+import numpy as np
+import pandas as pd
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import CondensedNearestNeighbour
-
 
 def genetic_neighborhood_old(dfZ, x, blackbox, dataset):
     discrete = dataset['discrete']
@@ -16,14 +18,14 @@ def genetic_neighborhood_old(dfZ, x, blackbox, dataset):
     discrete_no_class.remove(class_name)
 
     def distance_function(x0, x1, discrete, continuous, class_name):
-        return mixed_distance(x0, x1, discrete, continuous, class_name,
-                              ddist=simple_match_distance,
-                              cdist=normalized_euclidean_distance)
+        return distfun.mixed_distance(x0, x1, discrete, continuous, class_name,
+                              ddist=distfun.simple_match_distance,
+                              cdist=distfun.normalized_euclidean_distance)
 
-    Z = generate_data(x, feature_values, blackbox, discrete_no_class, continuous, class_name, idx_features,
+    Z = gpdg.generate_data(x, feature_values, blackbox, discrete_no_class, continuous, class_name, idx_features,
                       distance_function, neigtype={'ss': 0.5, 'sd': 0.5}, population_size=1000, halloffame_ratio=0.1,
                       alpha1=0.5, alpha2=0.5, eta1=1.0, eta2=0.0,  tournsize=3, cxpb=0.5, mutpb=0.2, ngen=10)
-    dfZ = build_df2explain(blackbox, Z, dataset)
+    dfZ = util.build_df2explain(blackbox, Z, dataset)
     return dfZ, Z
 
 
@@ -38,11 +40,11 @@ def genetic_neighborhood(dfZ, x, blackbox, dataset):
     discrete_no_class.remove(class_name)
 
     def distance_function(x0, x1, discrete, continuous, class_name):
-        return mixed_distance(x0, x1, discrete, continuous, class_name,
-                              ddist=simple_match_distance,
-                              cdist=normalized_euclidean_distance)
+        return distfun.mixed_distance(x0, x1, discrete, continuous, class_name,
+                              ddist=distfun.simple_match_distance,
+                              cdist=distfun.normalized_euclidean_distance)
 
-    Z = generate_data(x, feature_values, blackbox, discrete_no_class, continuous, class_name, idx_features,
+    Z = gpdg.generate_data(x, feature_values, blackbox, discrete_no_class, continuous, class_name, idx_features,
                       distance_function, neigtype={'ss': 0.5, 'sd': 0.5}, population_size=1000, halloffame_ratio=0.1,
                       alpha1=0.5, alpha2=0.5, eta1=1.0, eta2=0.0,  tournsize=3, cxpb=0.5, mutpb=0.2, ngen=10)
 
@@ -51,14 +53,14 @@ def genetic_neighborhood(dfZ, x, blackbox, dataset):
     if len(np.unique(zy)) == 1:
         # print('qui')
         label_encoder = dataset['label_encoder']
-        dfx = build_df2explain(blackbox, x.reshape(1, -1), dataset).to_dict('records')[0]
-        neig_indexes = get_closest_diffoutcome(dfZ, dfx, discrete, continuous, class_name,
+        dfx = util.build_df2explain(blackbox, x.reshape(1, -1), dataset).to_dict('records')[0]
+        neig_indexes = util.get_closest_diffoutcome(dfZ, dfx, discrete, continuous, class_name,
                                                blackbox, label_encoder, distance_function, k=100)
-        Zn, _ = label_encode(dfZ, discrete, label_encoder)
+        Zn, _ = util.label_encode(dfZ, discrete, label_encoder)
         Zn = Zn.iloc[neig_indexes, Z.columns != class_name].values
         Z = np.concatenate((Z, Zn), axis=0)
 
-    dfZ = build_df2explain(blackbox, Z, dataset)
+    dfZ = util.build_df2explain(blackbox, Z, dataset)
     return dfZ, Z
 
 
@@ -68,9 +70,9 @@ def real_data(dfZ, x, blackbox, dataset):
     class_name = dataset['class_name']
 
     dfZ = dfZ
-    Z, _ = label_encode(dfZ, discrete, label_encoder)
+    Z, _ = util.label_encode(dfZ, discrete, label_encoder)
     Z = Z.iloc[:, Z.columns != class_name].values
-    dfZ = build_df2explain(blackbox, Z, dataset)
+    dfZ = util.build_df2explain(blackbox, Z, dataset)
 
     return dfZ, Z
 
@@ -82,18 +84,18 @@ def closed_real_data(dfZ, x, blackbox, dataset):
     continuous = dataset['continuous']
 
     def distance_function(x0, x1, discrete, continuous, class_name):
-        return mixed_distance(x0, x1, discrete, continuous, class_name,
-                              ddist=simple_match_distance,
-                              cdist=normalized_euclidean_distance)
+        return distfun.mixed_distance(x0, x1, discrete, continuous, class_name,
+                              ddist=distfun.simple_match_distance,
+                              cdist=distfun.normalized_euclidean_distance)
 
-    dfx = build_df2explain(blackbox, x.reshape(1, -1), dataset).to_dict('records')[0]
-    neig_indexes = get_closest_diffoutcome(dfZ, dfx, discrete, continuous, class_name,
+    dfx = util.build_df2explain(blackbox, x.reshape(1, -1), dataset).to_dict('records')[0]
+    neig_indexes = util.get_closest_diffoutcome(dfZ, dfx, discrete, continuous, class_name,
                                            blackbox, label_encoder, distance_function, k=100)
 
     dfZ = dfZ
-    Z, _ = label_encode(dfZ, discrete, label_encoder)
+    Z, _ = util.label_encode(dfZ, discrete, label_encoder)
     Z = Z.iloc[neig_indexes, Z.columns != class_name].values
-    dfZ = build_df2explain(blackbox, Z, dataset)
+    dfZ = util.build_df2explain(blackbox, Z, dataset)
 
     return dfZ, Z
 
@@ -109,27 +111,27 @@ def random_neighborhood(dfZ, x, blackbox, dataset, stratified=True):
     if stratified:
 
         def distance_function(x0, x1, discrete, continuous, class_name):
-            return mixed_distance(x0, x1, discrete, continuous, class_name,
-                                  ddist=simple_match_distance,
-                                  cdist=normalized_euclidean_distance)
+            return distfun.mixed_distance(x0, x1, discrete, continuous, class_name,
+                                  ddist=distfun.simple_match_distance,
+                                  cdist=distfun.normalized_euclidean_distance)
 
-        dfx = build_df2explain(blackbox, x.reshape(1, -1), dataset).to_dict('records')[0]
-        neig_indexes = get_closest_diffoutcome(dfZ, dfx, discrete, continuous, class_name,
+        dfx = util.build_df2explain(blackbox, x.reshape(1, -1), dataset).to_dict('records')[0]
+        neig_indexes = util.get_closest_diffoutcome(dfZ, dfx, discrete, continuous, class_name,
                                                blackbox, label_encoder, distance_function, k=100)
 
-        Z, _ = label_encode(dfZ, discrete, label_encoder)
+        Z, _ = util.label_encode(dfZ, discrete, label_encoder)
         Z = Z.iloc[neig_indexes, Z.columns != class_name].values
         Z = generate_random_data(Z, class_name, columns, discrete, continuous, features_type, size=1000, uniform=True)
-        dfZ = build_df2explain(blackbox, Z, dataset)
+        dfZ = util.build_df2explain(blackbox, Z, dataset)
 
         return dfZ, Z
 
     else:
 
-        Z, _ = label_encode(dfZ, discrete, label_encoder)
+        Z, _ = util.label_encode(dfZ, discrete, label_encoder)
         Z = Z.iloc[:, Z.columns != class_name].values
         Z = generate_random_data(Z, class_name, columns, discrete, continuous, features_type, size=1000, uniform=True)
-        dfZ = build_df2explain(blackbox, Z, dataset)
+        dfZ = util.build_df2explain(blackbox, Z, dataset)
 
         return dfZ, Z
 
@@ -171,7 +173,7 @@ def random_oversampling(dfZ, x, blackbox, dataset):
 
     oversampler = RandomOverSampler()
     Z, _ = oversampler.fit_sample(Z, y)
-    dfZ = build_df2explain(blackbox, Z, dataset)
+    dfZ = util.build_df2explain(blackbox, Z, dataset)
     return dfZ, Z
 
 
@@ -181,5 +183,5 @@ def random_instance_selection(dfZ, x, blackbox, dataset):
 
     cnn = CondensedNearestNeighbour(return_indices=True)
     Z, _, _ = cnn.fit_sample(Z, y)
-    dfZ = build_df2explain(blackbox, Z, dataset)
+    dfZ = util.build_df2explain(blackbox, Z, dataset)
     return dfZ, Z

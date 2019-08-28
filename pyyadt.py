@@ -1,16 +1,13 @@
 import os
 import re
 import pydotplus
+import pickle as cPickle
 import subprocess
 
 import numpy as np
-import pandas as pd
 import networkx as nx
 
-from . import util
-
-from collections import defaultdict
-
+# from . import util
 
 def fit(df, class_name, columns, features_type, discrete, continuous,
         filename='yadt_dataset', path='./', sep=';', log=False):
@@ -29,7 +26,7 @@ def fit(df, class_name, columns, features_type, discrete, continuous,
         names_file.write('%s%s%s%s%s\n' % (col, sep, col_type, sep, disc_cont))
     names_file.close()
 
-    cmd = 'yadt/dTcmd -fd %s -fm %s -sep %s -d %s' % (
+    cmd = '~/Documents/github/explain_te/lore/yadt/dTcmd -fd %s -fm %s -sep %s -d %s' % (
         data_filename, names_filename, sep, tree_filename)
     output = subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
     # cmd = r"dTcmd -fd %s -fm %s -sep '%s' -d %s" % (
