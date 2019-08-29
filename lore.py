@@ -3,12 +3,11 @@ import numpy as np
 
 from . import pyyadt
 from . import util
-from . import neighbor_generator
-from . import gpdatagenerator
-# from gpdatagenerator import calculate_feature_values
+from . import neighbor_generator as ng
+from . import gpdatagenerator as gpdg
 
 def explain(idx_record2explain, X2E, dataset, blackbox,
-            ng_function=neighbor_generator.genetic_neighborhood, #generate_random_data, #genetic_neighborhood, random_neighborhood
+            ng_function=ng.genetic_neighborhood, #generate_random_data, #genetic_neighborhood, random_neighborhood
             discrete_use_probabilities=False,
             continuous_function_estimation=False,
             returns_infos=False, path='./', sep=';', log=False):
@@ -23,7 +22,7 @@ def explain(idx_record2explain, X2E, dataset, blackbox,
     possible_outcomes = dataset['possible_outcomes']
 
     # Dataset Preprocessing
-    dataset['feature_values'] = gpdatagenerator.calculate_feature_values(X2E, columns, class_name, discrete, continuous, 1000,
+    dataset['feature_values'] = gpdg.calculate_feature_values(X2E, columns, class_name, discrete, continuous, 1000,
                                                          discrete_use_probabilities, continuous_function_estimation)
 
     dfZ, x = util.dataframe2explain(X2E, dataset, idx_record2explain, blackbox)
@@ -52,10 +51,10 @@ def explain(idx_record2explain, X2E, dataset, blackbox,
 
     # Update labels if necessary
     if class_name in label_encoder:
-        cc_outcome = util.label_encoder[class_name].transform(np.array([cc_outcome]))[0]
+        cc_outcome = label_encoder[class_name].transform(np.array([cc_outcome]))[0]
 
     if class_name in label_encoder:
-        y_pred_cc = util.label_encoder[class_name].transform(y_pred_cc)
+        y_pred_cc = label_encoder[class_name].transform(y_pred_cc)
 
     # Extract Coutnerfactuals
     diff_outcome = util.get_diff_outcome(bb_outcome, possible_outcomes)

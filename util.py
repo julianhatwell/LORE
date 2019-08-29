@@ -116,9 +116,6 @@ def get_closest_diffoutcome(df, x, discrete, continuous, class_name, blackbox, l
     return final_indexes
 
 
-
-
-
 def generate_artificial_features(size, class_name, columns, features_type, discrete, continuous, ratio=0.25):
     discrete_no_class = list(discrete)
     discrete_no_class.remove(class_name)

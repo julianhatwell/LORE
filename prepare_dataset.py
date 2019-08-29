@@ -108,20 +108,18 @@ def prepare_compass_dataset(filename, path_data):
                'c_charge_degree', 'is_recid', 'is_violent_recid', 'two_year_recid', 'decile_score', 'score_text']
 
     df = df[columns]
-
     df['days_b_screening_arrest'] = np.abs(df['days_b_screening_arrest'])
-
+    df['days_b_screening_arrest'].fillna(df['days_b_screening_arrest'].value_counts().index[0], inplace=True)
+    df['days_b_screening_arrest'] = df['days_b_screening_arrest'].astype(np.int64)
+    
     df['c_jail_out'] = pd.to_datetime(df['c_jail_out'])
     df['c_jail_in'] = pd.to_datetime(df['c_jail_in'])
     df['length_of_stay'] = (df['c_jail_out'] - df['c_jail_in']).dt.days
     df['length_of_stay'] = np.abs(df['length_of_stay'])
 
     df['length_of_stay'].fillna(df['length_of_stay'].value_counts().index[0], inplace=True)
-    df['days_b_screening_arrest'].fillna(df['days_b_screening_arrest'].value_counts().index[0], inplace=True)
-
-    df['length_of_stay'] = df['length_of_stay'].astype(int)
-    df['days_b_screening_arrest'] = df['days_b_screening_arrest'].astype(int)
-
+    df['length_of_stay'] = df['length_of_stay'].astype(np.int64)
+    
     def get_class(x):
         if x < 7:
             return 'Medium-Low'
@@ -141,7 +139,6 @@ def prepare_compass_dataset(filename, path_data):
     possible_outcomes = list(df[class_name].unique())
 
     type_features, features_type = util.recognize_features_type(df, class_name)
-
     discrete = ['is_recid', 'is_violent_recid', 'two_year_recid']
     discrete, continuous = util.set_discrete_continuous(columns, type_features, class_name, discrete=discrete,
                                                    continuous=None)
