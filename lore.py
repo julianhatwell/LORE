@@ -22,7 +22,7 @@ def explain(idx_record2explain, X2E, dataset, blackbox,
     possible_outcomes = dataset['possible_outcomes']
 
     # Dataset Preprocessing
-    dataset['feature_values'] = gpdg.calculate_feature_values(X2E, columns, class_name, discrete, continuous, 1000,
+    dataset['feature_values'] = gpdg.calculate_feature_values(X2E, columns, class_name, discrete, continuous, X2E.shape[0],
                                                          discrete_use_probabilities, continuous_function_estimation)
 
     dfZ, x = util.dataframe2explain(X2E, dataset, idx_record2explain, blackbox)

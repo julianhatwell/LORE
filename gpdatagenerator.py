@@ -2,9 +2,9 @@ import math
 import warnings
 import scipy.stats as st
 import numpy as np
+import pandas as pd
 import pickle as cPickle
 
-from . import util
 from deap import base, creator, tools, algorithms
 
 
@@ -241,7 +241,6 @@ def calculate_feature_values(X, columns, class_name, discrete, continuous, size=
     columns1 = list(columns)
     columns1.remove(class_name)
     feature_values = dict()
-
     for i, col in enumerate(columns1):
         values = X[:, i]
         if col in discrete:
@@ -254,34 +253,56 @@ def calculate_feature_values(X, columns, class_name, discrete, continuous, size=
                 diff_values = np.unique(values)
                 new_values = diff_values
         elif col in continuous:
+            if len(np.unique(values)) == 2 and all(np.unique(values) == np.array([0., 1.])):
+                binary = True
+            else:
+                binary = False
             if continuous_function_estimation:
-                new_values = get_distr_values(values, size)
-            else:  # suppose is gaussian
+                new_values = get_distr_values(values, size, binary)
+            else:  
                 mu = np.mean(values)
-                sigma = np.std(values)
-                new_values = np.random.normal(mu, sigma, size)
+                if binary and discrete_use_probabilities:
+                    new_values = st.bernoulli.rvs(p=mu, size=size)
+                elif binary and not discrete_use_probabilities:
+                    diff_values = np.unique(values)
+                    new_values = diff_values
+                else: # suppose is gaussian
+                    sigma = np.std(values)
+                    new_values = np.random.normal(mu, sigma, size)
             new_values = np.concatenate((values, new_values), axis=0)
-
         feature_values[i] = new_values
 
     return feature_values
 
 
-def get_distr_values(x, size=1000):
-    nbr_bins = int(np.round(estimate_nbr_bins(x)))
-    name, params = best_fit_distribution(x, nbr_bins)
-    dist = getattr(st, name)
+def get_distr_values(x, size=1000, binary=False):
+    if binary:
+        p = np.mean(x)
+        if p==0.5:
+            minp = maxp = p
+        else:
+            pees = [p, 1-p]
+            minp = pees[pees.index(min(pees))]
+            maxp = pees[pees.index(max(pees))]
 
-    arg = params[:-2]
-    loc = params[-2]
-    scale = params[-1]
-
-    start = dist.ppf(0.01, *arg, loc=loc, scale=scale) if arg else dist.ppf(0.01, loc=loc, scale=scale)
-    end = dist.ppf(0.99, *arg, loc=loc, scale=scale) if arg else dist.ppf(0.99, loc=loc, scale=scale)
-
-    distr_values = np.linspace(start, end, size)
-
-    return distr_values
+        distr_values = np.empty(size)
+        distr_values[x == 0] = st.bernoulli.rvs(minp, size=np.sum(x == 0))
+        distr_values[x == 1] = st.bernoulli.rvs(maxp, size=np.sum(x == 1))
+    else:
+        nbr_bins = int(np.round(estimate_nbr_bins(x)))
+        name, params = best_fit_distribution(x, nbr_bins)
+        dist = getattr(st, name)
+    
+        arg = params[:-2]
+        loc = params[-2]
+        scale = params[-1]
+    
+        start = dist.ppf(0.01, *arg, loc=loc, scale=scale) if arg else dist.ppf(0.01, loc=loc, scale=scale)
+        end = dist.ppf(0.99, *arg, loc=loc, scale=scale) if arg else dist.ppf(0.99, loc=loc, scale=scale)
+    
+        distr_values = np.linspace(start, end, size)
+    
+        return distr_values
 
 
 # Distributions to check
