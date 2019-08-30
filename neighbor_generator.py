@@ -35,7 +35,7 @@ def genetic_neighborhood(dfZ, x, blackbox, dataset):
     class_name = dataset['class_name']
     idx_features = dataset['idx_features']
     feature_values = dataset['feature_values']
-
+ 
     discrete_no_class = list(discrete)
     discrete_no_class.remove(class_name)
 
