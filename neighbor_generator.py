@@ -7,26 +7,26 @@ import pandas as pd
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import CondensedNearestNeighbour
 
-def genetic_neighborhood_old(dfZ, x, blackbox, dataset):
-    discrete = dataset['discrete']
-    continuous = dataset['continuous']
-    class_name = dataset['class_name']
-    idx_features = dataset['idx_features']
-    feature_values = dataset['feature_values']
-
-    discrete_no_class = list(discrete)
-    discrete_no_class.remove(class_name)
-
-    def distance_function(x0, x1, discrete, continuous, class_name):
-        return distfun.mixed_distance(x0, x1, discrete, continuous, class_name,
-                              ddist=distfun.simple_match_distance,
-                              cdist=distfun.normalized_euclidean_distance)
-
-    Z = gpdg.generate_data(x, feature_values, blackbox, discrete_no_class, continuous, class_name, idx_features,
-                      distance_function, neigtype={'ss': 0.5, 'sd': 0.5}, population_size=1000, halloffame_ratio=0.1,
-                      alpha1=0.5, alpha2=0.5, eta1=1.0, eta2=0.0,  tournsize=3, cxpb=0.5, mutpb=0.2, ngen=10)
-    dfZ = util.build_df2explain(blackbox, Z, dataset)
-    return dfZ, Z
+#def genetic_neighborhood_old(dfZ, x, blackbox, dataset):
+#    discrete = dataset['discrete']
+#    continuous = dataset['continuous']
+#    class_name = dataset['class_name']
+#    idx_features = dataset['idx_features']
+#    feature_values = dataset['feature_values']
+#
+#    discrete_no_class = list(discrete)
+#    discrete_no_class.remove(class_name)
+#
+#    def distance_function(x0, x1, discrete, continuous, class_name):
+#        return distfun.mixed_distance(x0, x1, discrete, continuous, class_name,
+#                              ddist=distfun.simple_match_distance,
+#                              cdist=distfun.normalized_euclidean_distance)
+#
+#    Z = gpdg.generate_data(x, feature_values, blackbox, discrete_no_class, continuous, class_name, idx_features,
+#                      distance_function, neigtype={'ss': 0.5, 'sd': 0.5}, population_size=1000, halloffame_ratio=0.1,
+#                      alpha1=0.5, alpha2=0.5, eta1=1.0, eta2=0.0,  tournsize=3, cxpb=0.5, mutpb=0.2, ngen=10)
+#    dfZ = util.build_df2explain(blackbox, Z, dataset)
+#    return dfZ, Z
 
 
 def genetic_neighborhood(dfZ, x, blackbox, dataset):
@@ -47,7 +47,6 @@ def genetic_neighborhood(dfZ, x, blackbox, dataset):
     Z = gpdg.generate_data(x, feature_values, blackbox, discrete_no_class, continuous, class_name, idx_features,
                       distance_function, neigtype={'ss': 0.5, 'sd': 0.5}, population_size=1000, halloffame_ratio=0.1,
                       alpha1=0.5, alpha2=0.5, eta1=1.0, eta2=0.0,  tournsize=3, cxpb=0.5, mutpb=0.2, ngen=10)
-
     zy = blackbox.predict(Z)
     # print(np.unique(zy, return_counts=True))
     if len(np.unique(zy)) == 1:
@@ -59,7 +58,6 @@ def genetic_neighborhood(dfZ, x, blackbox, dataset):
         Zn, _ = util.label_encode(dfZ, discrete, label_encoder)
         Zn = Zn.iloc[neig_indexes, Z.columns != class_name].values
         Z = np.concatenate((Z, Zn), axis=0)
-
     dfZ = util.build_df2explain(blackbox, Z, dataset)
     return dfZ, Z
 

@@ -24,24 +24,25 @@ def explain(idx_record2explain, X2E, dataset, blackbox,
     # Dataset Preprocessing
     dataset['feature_values'] = gpdg.calculate_feature_values(X2E, columns, class_name, discrete, continuous, X2E.shape[0],
                                                          discrete_use_probabilities, continuous_function_estimation)
-    
+        
     dfZ, x = util.dataframe2explain(X2E, dataset, idx_record2explain, blackbox)
-
-    # Generate Neighborhood
-    dfZ, Z = ng_function(dfZ, x, blackbox, dataset)
-
-    # Build Decision Tree
-    dt, dt_dot = pyyadt.fit(dfZ, class_name, columns, features_type, discrete, continuous,
-                            filename=dataset['name'], path=path, sep=sep, log=log)
 
     # Apply Black Box and Decision Tree on instance to explain
     bb_outcome = blackbox.predict(x.reshape(1, -1))[0]
 
     dfx = util.build_df2explain(blackbox, x.reshape(1, -1), dataset).to_dict('records')[0]
+
+    # Generate Neighborhood
+    dfZ, Z = ng_function(dfZ, x, blackbox, dataset)
+    y_pred_bb = blackbox.predict(Z)
+
+    # Build Decision Tree
+    dt, dt_dot = pyyadt.fit(dfZ, class_name, columns, features_type, discrete, continuous,
+                            filename=dataset['name'], path=path, sep=sep, log=log)
+
     cc_outcome, rule, tree_path = pyyadt.predict_rule(dt, dfx, class_name, features_type, discrete, continuous)
 
     # Apply Black Box and Decision Tree on neighborhood
-    y_pred_bb = blackbox.predict(Z)
     y_pred_cc, leaf_nodes = pyyadt.predict(dt, dfZ.to_dict('records'), class_name, features_type,
                                            discrete, continuous)
 
@@ -81,7 +82,6 @@ def explain(idx_record2explain, X2E, dataset, blackbox,
         return explanation, infos
 
     return explanation
-
 
 def is_satisfied(x, rule, discrete, features_type):
     for col, val in rule.items():
